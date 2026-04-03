@@ -1,0 +1,16 @@
+pydantic>=2.0
+openai>=1.0.0
+arize-phoenix==13.3.0
+arize-phoenix-client==1.29.0
+
+arize-phoenix-otel
+
+# OpenTelemetry Core
+opentelemetry-api
+opentelemetry-sdk
+
+# OTLP Exporter (used to send traces to Phoenix)
+opentelemetry-exporter-otlp
+python-dotenv
+beautifulsoup4
+openinference-semantic-conventions
