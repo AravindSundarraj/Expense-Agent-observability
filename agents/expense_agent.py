@@ -57,9 +57,37 @@ def run_expense_agent(user_input: str):
                 })
 
             span.set_attribute("classified.count", len(classified))
+        # 🧩 NEW: Aggregation Span
+        '''
+        We introduce an aggregation span to isolate the final transformation stage, 
+        where classified expenses are grouped and summarized. This helps us separate 
+        computational logic from data transformation, 
+        making performance and debugging analysis more precise.
+        ''' 
+        with tracer.start_as_current_span("expense_aggregation") as span:
+
+            span.set_attribute(
+                    SpanAttributes.OPENINFERENCE_SPAN_KIND,
+                    OpenInferenceSpanKindValues.CHAIN.value
+                )
+            total_by_category = {}
+
+            for item in classified:
+                cat = item["category"]
+                total_by_category[cat] = total_by_category.get(cat, 0) + item["amount"]
+
+            final_output = {
+                "classified_items": classified,
+                "summary": total_by_category
+            }
+
+            # Observability metadata
+            span.set_attribute("categories.count", len(total_by_category))
+            span.set_attribute("items.count", len(classified))
+
 
         # For now, just return input
-        return classified
+        return final_output
 
 '''
 The expense extractor is isolated in a separate span to clearly capture and measure 
