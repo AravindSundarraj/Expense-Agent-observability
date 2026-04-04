@@ -51,7 +51,7 @@ def run_expense_agent(user_input: str):
                 SpanAttributes.OPENINFERENCE_SPAN_KIND,
                 OpenInferenceSpanKindValues.CHAIN.value
             )
-
+        root_span.set_status(Status(StatusCode.OK))
         root_span.set_attribute(SpanAttributes.INPUT_VALUE, user_input)
         root_span.set_attribute(SpanAttributes.OUTPUT_VALUE, None)
 
@@ -140,7 +140,7 @@ def run_expense_agent(user_input: str):
                 llm_span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise e
             
-    root_span.set_status(Status(StatusCode.OK))
+    
 
         # For now, just return input
     return llm_output.choices[0].message.content
