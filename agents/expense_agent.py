@@ -5,9 +5,11 @@ from tools.expense_classifier_tool import classify_expense
 from models.llm_client import LLMClient
 from models.prompts import EXPENSE_SYSTEM_PROMPT, EXPENSE_USER_PROMPT_TEMPLATE
 from opentelemetry.trace import Status, StatusCode
+import openinference.instrumentation as oi
 
 # Get tracer
 tracer = trace.get_tracer("expense_agent_tracer")
+
 
 def extract_expenses(user_input: str):
 
@@ -51,8 +53,10 @@ def run_expense_agent(user_input: str):
             )
 
         root_span.set_attribute(SpanAttributes.INPUT_VALUE, user_input)
+        root_span.set_attribute(SpanAttributes.OUTPUT_VALUE, None)
+
         root_span.add_event("Agent started reasoning")
-        root_span.set_attribute("user.input", user_input)
+        #root_span.set_attribute("user.input", user_input)
 
         print("Processing user input..." , user_input)
                 # 🧩 CHILD SPAN → Extraction
@@ -120,7 +124,15 @@ def run_expense_agent(user_input: str):
     
             try:
                 llm_output = run_expense_llm(user_input, classified, total_by_category)
-                llm_span.set_attribute(SpanAttributes.OUTPUT_VALUE, llm_output)
+                oi_token_count = oi.TokenCount(
+                prompt=llm_output.usage.prompt_tokens,
+                completion=llm_output.usage.completion_tokens,total=llm_output.usage.total_tokens)
+
+                llm_span.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_PROMPT, llm_output.usage.prompt_tokens)
+                llm_span.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_COMPLETION, llm_output.usage.completion_tokens)
+                llm_span.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_TOTAL, llm_output.usage.total_tokens)
+                llm_span.set_attribute(SpanAttributes.LLM_MODEL_NAME, "gpt-4o-mini")
+                llm_span.set_attribute(SpanAttributes.OUTPUT_VALUE, llm_output.response.choices[0].message.content)
                 llm_span.set_status(Status(StatusCode.OK))
                 llm_span.set_attribute("llm.model", "gpt-4o-mini")
                 llm_span.set_attribute("llm.provider", "openai")
@@ -128,10 +140,10 @@ def run_expense_agent(user_input: str):
                 llm_span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise e
             
-
+    root_span.set_status(Status(StatusCode.OK))
 
         # For now, just return input
-    return llm_output
+    return llm_output.response.choices[0].message.content
 
 '''
 The expense extractor is isolated in a separate span to clearly capture and measure 

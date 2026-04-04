@@ -1,6 +1,6 @@
 from openai import OpenAI
 from openai import OpenAI
-from config_loader import OPENAI_API_KEY
+from models.config_loader import OPENAI_API_KEY
 
 class LLMClient:
 
@@ -23,4 +23,4 @@ class LLMClient:
             temperature=self.temperature
         )
 
-        return response.choices[0].message.content
+        return response
