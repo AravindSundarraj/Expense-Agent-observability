@@ -132,7 +132,7 @@ def run_expense_agent(user_input: str):
                 llm_span.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_COMPLETION, llm_output.usage.completion_tokens)
                 llm_span.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_TOTAL, llm_output.usage.total_tokens)
                 llm_span.set_attribute(SpanAttributes.LLM_MODEL_NAME, "gpt-4o-mini")
-                llm_span.set_attribute(SpanAttributes.OUTPUT_VALUE, llm_output.response.choices[0].message.content)
+                llm_span.set_attribute(SpanAttributes.OUTPUT_VALUE, llm_output.choices[0].message.content)
                 llm_span.set_status(Status(StatusCode.OK))
                 llm_span.set_attribute("llm.model", "gpt-4o-mini")
                 llm_span.set_attribute("llm.provider", "openai")
@@ -143,7 +143,7 @@ def run_expense_agent(user_input: str):
     root_span.set_status(Status(StatusCode.OK))
 
         # For now, just return input
-    return llm_output.response.choices[0].message.content
+    return llm_output.choices[0].message.content
 
 '''
 The expense extractor is isolated in a separate span to clearly capture and measure 
