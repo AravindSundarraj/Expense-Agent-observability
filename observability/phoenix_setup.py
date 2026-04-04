@@ -24,7 +24,8 @@ from phoenix.trace import suppress_tracing
 from phoenix.evals.utils import to_annotation_dataframe
 
 # ***** Trace Provider ******
-# TracerProvider primarily creates Tracers, and Tracers create Spans. The hierarchy is:
+# TracerProvider primarily creates Tracers, and Tracers create Spans. 
+# The hierarchy is:
 
 # TracerProvider → creates Tracers
 # Tracer → creates Spans
