@@ -69,7 +69,7 @@ def init_phoenix():
        insecure=True
 )
 
-
+    trace_api.set_tracer_provider(tracer_provider)
     tracer_provider.add_span_processor(BatchSpanProcessor(
     otlp_exporter,
     max_queue_size=2048,        # max spans buffered
@@ -78,4 +78,7 @@ def init_phoenix():
     export_timeout_millis=30000 # timeout for export
 ))
 
-init_phoenix()
+    # ✅ Set this tracer provider globally
+    
+    print("✅ Phoenix tracing initialized successfully")
+
