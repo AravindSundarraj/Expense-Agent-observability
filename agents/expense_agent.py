@@ -51,9 +51,9 @@ def run_expense_agent(user_input: str):
                 SpanAttributes.OPENINFERENCE_SPAN_KIND,
                 OpenInferenceSpanKindValues.CHAIN.value
             )
-        root_span.set_status(Status(StatusCode.OK))
+        
         root_span.set_attribute(SpanAttributes.INPUT_VALUE, user_input)
-        root_span.set_attribute(SpanAttributes.OUTPUT_VALUE, None)
+        
 
         root_span.add_event("Agent started reasoning")
         #root_span.set_attribute("user.input", user_input)
@@ -129,6 +129,7 @@ def run_expense_agent(user_input: str):
                 completion=llm_output.usage.completion_tokens,total=llm_output.usage.total_tokens)
 
                 llm_span.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_PROMPT, llm_output.usage.prompt_tokens)
+                llm_span.set_attribute(SpanAttributes.INPUT_VALUE, user_input)
                 llm_span.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_COMPLETION, llm_output.usage.completion_tokens)
                 llm_span.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_TOTAL, llm_output.usage.total_tokens)
                 llm_span.set_attribute(SpanAttributes.LLM_MODEL_NAME, "gpt-4o-mini")
@@ -139,6 +140,8 @@ def run_expense_agent(user_input: str):
             except Exception as e:
                 llm_span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise e
+        root_span.set_status(Status(StatusCode.OK))
+        root_span.set_attribute(SpanAttributes.OUTPUT_VALUE, llm_output.choices[0].message.content)
             
     
 
