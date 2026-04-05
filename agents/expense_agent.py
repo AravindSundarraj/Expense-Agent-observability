@@ -7,6 +7,7 @@ from models.prompts import EXPENSE_SYSTEM_PROMPT, EXPENSE_USER_PROMPT_TEMPLATE
 from opentelemetry.trace import Status, StatusCode
 import openinference.instrumentation as oi
 from services.item_extraction import extract_expenses_llm
+from services.summary import build_summary
 
 
 # Get tracer
@@ -147,7 +148,7 @@ def run_expense_agent(user_input: str):
             OpenInferenceSpanKindValues.LLM.value)
     
             try:
-                llm_output = run_expense_llm(user_input, cleaned_classified_items)
+                llm_output = run_expense_llm(user_input, cleaned_classified_items, build_summary(cleaned_classified_items))
                 oi_token_count = oi.TokenCount(
                 prompt=llm_output.usage.prompt_tokens,
                 completion=llm_output.usage.completion_tokens,total=llm_output.usage.total_tokens)
