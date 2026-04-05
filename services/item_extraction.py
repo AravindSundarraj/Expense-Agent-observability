@@ -6,7 +6,7 @@ import json
 import re
 
 
-def extract_expenses_llm(user_input: str, Spans: Span):
+def extract_expenses_llm(user_input: str):
     llm = llm_client.LLMClient()
 
     prompt = f"""
@@ -40,11 +40,12 @@ Input:
         "completion_tokens": response.usage.completion_tokens,
         "total_tokens": response.usage.total_tokens,
         "content": response.choices[0].message.content,
-        "json": safe_parse_json(response)
+        "json": safe_parse_json(response.choices[0].message.content)
 
         }
         return extraction_dictionary
-    except Exception:
+    except Exception as e:
+        print(f"Failed to parse LLM response. Returning empty list. Error: {e}")
         return []
 
 def safe_parse_json(text):

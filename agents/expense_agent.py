@@ -1,12 +1,13 @@
 from opentelemetry import trace
 from openinference.semconv.trace import SpanAttributes, OpenInferenceSpanKindValues
 
-from tools.expense_classifier_tool import classify_expense
+from tools.expense_classifier_tool import classify_expense_llm
 from models.llm_client import LLMClient
 from models.prompts import EXPENSE_SYSTEM_PROMPT, EXPENSE_USER_PROMPT_TEMPLATE
 from opentelemetry.trace import Status, StatusCode
 import openinference.instrumentation as oi
 from services.item_extraction import extract_expenses_llm
+
 
 # Get tracer
 tracer = trace.get_tracer("expense_agent_tracer")
@@ -64,9 +65,10 @@ def run_expense_agent(user_input: str):
                 OpenInferenceSpanKindValues.LLM.value
             )
             extracted_items = extract_expenses(user_input)
+            print("Extracted items:", extracted_items)
             
             
-            ex_span.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_PROMPT, extracted_items)
+            ex_span.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_PROMPT, extracted_items["prompt_tokens"])
             ex_span.set_attribute(SpanAttributes.INPUT_VALUE, user_input)
             ex_span.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_COMPLETION, extracted_items["completion_tokens"])
             ex_span.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_TOTAL, extracted_items["total_tokens"])
@@ -78,24 +80,23 @@ def run_expense_agent(user_input: str):
 
             
                 # 🧩 CHILD SPAN → Classification (calls TOOL)
-        with tracer.start_as_current_span("expense_classification") as span:
-            span.set_attribute(
+        with tracer.start_as_current_span("expense_classification") as expense_span:
+            expense_span.set_attribute(
                     SpanAttributes.OPENINFERENCE_SPAN_KIND,
                     OpenInferenceSpanKindValues.CHAIN.value
                 )
+            expense_span.set_status(Status(StatusCode.OK))
+            expense_span.set_attribute(SpanAttributes.INPUT_VALUE, extracted_items)
 
             classified = []
 
             for item in extracted_items:
-                category = classify_expense(item["item"])  # 🔧 TOOL CALL
+                category = classify_expense_llm(item["item"])  # 🔧 TOOL CALL
 
-                classified.append({
-                    "item": item["item"],
-                    "amount": item["amount"],
-                    "category": category
-                })
+                classified.append(category["json"])
 
-            span.set_attribute("classified.count", len(classified))
+            expense_span.set_attribute("classified.count", len(classified))
+            expense_span.set_attribute(SpanAttributes.OUTPUT_VALUE, classified)
         # 🧩 NEW: Aggregation Span
         '''
         We introduce an aggregation span to isolate the final transformation stage, 
