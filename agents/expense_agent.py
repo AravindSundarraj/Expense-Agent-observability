@@ -6,6 +6,7 @@ from models.llm_client import LLMClient
 from models.prompts import EXPENSE_SYSTEM_PROMPT, EXPENSE_USER_PROMPT_TEMPLATE
 from opentelemetry.trace import Status, StatusCode
 import openinference.instrumentation as oi
+from services.item_extraction import extract_expenses_llm
 
 # Get tracer
 tracer = trace.get_tracer("expense_agent_tracer")
@@ -13,10 +14,7 @@ tracer = trace.get_tracer("expense_agent_tracer")
 
 def extract_expenses(user_input: str):
 
-    return [
-        {"item": "Uber", "amount": 120},
-        {"item": "Food", "amount": 50}
-    ]
+    return extract_expenses_llm(user_input)
 
 def run_expense_llm(user_input, classified_items, summary):
 
@@ -60,14 +58,25 @@ def run_expense_agent(user_input: str):
 
         print("Processing user input..." , user_input)
                 # 🧩 CHILD SPAN → Extraction
-        with tracer.start_as_current_span("expense_extraction") as span:
-            span.set_attribute(
+        with tracer.start_as_current_span("expense_extraction") as ex_span:
+            ex_span.set_attribute(
                 SpanAttributes.OPENINFERENCE_SPAN_KIND,
-                OpenInferenceSpanKindValues.CHAIN.value
+                OpenInferenceSpanKindValues.LLM.value
             )
             extracted_items = extract_expenses(user_input)
+            
+            
+            ex_span.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_PROMPT, extracted_items)
+            ex_span.set_attribute(SpanAttributes.INPUT_VALUE, user_input)
+            ex_span.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_COMPLETION, extracted_items["completion_tokens"])
+            ex_span.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_TOTAL, extracted_items["total_tokens"])
+            ex_span.set_attribute(SpanAttributes.LLM_MODEL_NAME, "gpt-4o-mini")
+            ex_span.set_attribute(SpanAttributes.OUTPUT_VALUE, extracted_items["json"])
+            ex_span.set_status(Status(StatusCode.OK))
+            ex_span.set_attribute("llm.model", "gpt-4o-mini")
+            ex_span.set_attribute("llm.provider", "openai")
 
-            span.set_attribute("extracted.count", len(extracted_items))
+            
                 # 🧩 CHILD SPAN → Classification (calls TOOL)
         with tracer.start_as_current_span("expense_classification") as span:
             span.set_attribute(
