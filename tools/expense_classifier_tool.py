@@ -49,7 +49,7 @@ Item: {item}
         "completion_tokens": response.usage.completion_tokens,
         "total_tokens": response.usage.total_tokens,
         "content": response.choices[0].message.content,
-        "json": extract_expenses_llm.safe_parse_json(response.choices[0].message.content)
+        "json": safe_parse_json(response.choices[0].message.content)
 
         }
         span_tool_LLM.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_PROMPT, classifier_dictionary["prompt_tokens"])
