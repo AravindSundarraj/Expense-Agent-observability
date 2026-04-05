@@ -12,6 +12,15 @@ from services.item_extraction import extract_expenses_llm
 # Get tracer
 tracer = trace.get_tracer("expense_agent_tracer")
 
+def clean_json_block(text):
+    import re, json
+
+    text = text.strip()
+
+    # remove ```json ``` wrappers
+    text = re.sub(r"```json|```", "", text).strip()
+
+    return json.loads(text)
 
 def extract_expenses(user_input: str):
 
@@ -92,49 +101,53 @@ def run_expense_agent(user_input: str):
 
             for item in extracted_items["json"]:  # 🔧 TOOL CALL
                 print("Classifying item:", item , "item-type:", type(item))
-                category = classify_expense_llm(item)  # 🔧 TOOL CALL
+                category = classify_expense_llm(item)
+                print("category---:", category)  # 🔧 TOOL CALL
 
-                classified.append(category["json"])
+                classified.append(category["content"])
 
             expense_span.set_attribute("classified.count", len(classified))
             expense_span.set_attribute(SpanAttributes.OUTPUT_VALUE, classified)
+            print("Classified items:", classified)
         # 🧩 NEW: Aggregation Span
         '''
-        We introduce an aggregation span to isolate the final transformation stage, 
-        where classified expenses are grouped and summarized. This helps us separate 
-        computational logic from data transformation, 
-        making performance and debugging analysis more precise.
-        ''' 
-        with tracer.start_as_current_span("expense_aggregation") as span:
+        # We introduce an aggregation span to isolate the final transformation stage, 
+        # where classified expenses are grouped and summarized. This helps us separate 
+        # computational logic from data transformation, 
+        # making performance and debugging analysis more precise.
+        # ''' 
+        # with tracer.start_as_current_span("expense_aggregation") as span:
 
-            span.set_attribute(
-                    SpanAttributes.OPENINFERENCE_SPAN_KIND,
-                    OpenInferenceSpanKindValues.CHAIN.value
-                )
-            total_by_category = {}
+        #     span.set_attribute(
+        #             SpanAttributes.OPENINFERENCE_SPAN_KIND,
+        #             OpenInferenceSpanKindValues.CHAIN.value
+        #         )
+        #     total_by_category = {}
 
-            for item in classified:
-                cat = item["category"]
-                total_by_category[cat] = total_by_category.get(cat, 0) + item["amount"]
+        #     for item in classified:
+        #         cat = item["category"]
+        #         total_by_category[cat] = total_by_category.get(cat, 0) + item["amount"]
 
-            final_output = {
-                "classified_items": classified,
-                "summary": total_by_category
-            }
+        #     final_output = {
+        #         "classified_items": classified,
+        #         "summary": total_by_category
+        #     }
 
-            # Observability metadata
-            span.set_attribute("categories.count", len(total_by_category))
-            span.set_attribute("items.count", len(classified))
+        #     # Observability metadata
+        #     span.set_attribute("categories.count", len(total_by_category))
+        #     span.set_attribute("items.count", len(classified))
         with tracer.start_as_current_span(
         "expense_llm_generation") as llm_span:
     
-
+            cleaned_classified_items = [
+            clean_json_block(item) for item in classified
+                ]
             llm_span.set_attribute(
             SpanAttributes.OPENINFERENCE_SPAN_KIND,
             OpenInferenceSpanKindValues.LLM.value)
     
             try:
-                llm_output = run_expense_llm(user_input, classified, total_by_category)
+                llm_output = run_expense_llm(user_input, cleaned_classified_items)
                 oi_token_count = oi.TokenCount(
                 prompt=llm_output.usage.prompt_tokens,
                 completion=llm_output.usage.completion_tokens,total=llm_output.usage.total_tokens)

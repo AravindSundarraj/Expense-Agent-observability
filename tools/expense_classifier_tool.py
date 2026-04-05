@@ -6,6 +6,8 @@ from opentelemetry.trace import Status, StatusCode
 # Get tracer
 tracer = trace.get_tracer("expense_classifier_tracer")
 
+
+
 def classify_expense_llm(item: str):
     print("Classifying item in tool:", item)
 
