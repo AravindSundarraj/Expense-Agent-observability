@@ -65,7 +65,7 @@ def run_expense_agent(user_input: str):
                 OpenInferenceSpanKindValues.LLM.value
             )
             extracted_items = extract_expenses(user_input)
-            print("Extracted items:", extracted_items)
+
             
             
             ex_span.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_PROMPT, extracted_items["prompt_tokens"])
@@ -90,8 +90,9 @@ def run_expense_agent(user_input: str):
 
             classified = []
 
-            for item in extracted_items:
-                category = classify_expense_llm(item["item"])  # 🔧 TOOL CALL
+            for item in extracted_items["json"]:  # 🔧 TOOL CALL
+                print("Classifying item:", item , "item-type:", type(item))
+                category = classify_expense_llm(item)  # 🔧 TOOL CALL
 
                 classified.append(category["json"])
 

@@ -1,5 +1,5 @@
 from models.llm_client import LLMClient
-from services.item_extraction import extract_expenses_llm
+from services.item_extraction import extract_expenses_llm , safe_parse_json
 from opentelemetry import trace
 from openinference.semconv.trace import SpanAttributes, OpenInferenceSpanKindValues
 from opentelemetry.trace import Status, StatusCode
@@ -7,6 +7,7 @@ from opentelemetry.trace import Status, StatusCode
 tracer = trace.get_tracer("expense_classifier_tracer")
 
 def classify_expense_llm(item: str):
+    print("Classifying item in tool:", item)
 
     with tracer.start_as_current_span("expense_classifier_tool") as span_tool:
             span_tool.set_attribute(
