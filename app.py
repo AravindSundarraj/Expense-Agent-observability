@@ -9,7 +9,7 @@ def main():
     print("🚀 Expense Agent Started...")
 
     # Sample user input
-    user_input = "I spent $120 on Uber and $50 on food"
+    user_input = input("Enter your expense details: ..... ")
 
     print(f"📥 User Input: {user_input}")
 

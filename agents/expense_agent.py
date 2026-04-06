@@ -8,6 +8,7 @@ from opentelemetry.trace import Status, StatusCode
 import openinference.instrumentation as oi
 from services.item_extraction import extract_expenses_llm
 from services.summary import build_summary
+import json
 
 
 # Get tracer
@@ -75,6 +76,7 @@ def run_expense_agent(user_input: str):
                 OpenInferenceSpanKindValues.LLM.value
             )
             extracted_items = extract_expenses(user_input)
+            #extracted_items["json"]
 
             
             
@@ -83,7 +85,7 @@ def run_expense_agent(user_input: str):
             ex_span.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_COMPLETION, extracted_items["completion_tokens"])
             ex_span.set_attribute(SpanAttributes.LLM_TOKEN_COUNT_TOTAL, extracted_items["total_tokens"])
             ex_span.set_attribute(SpanAttributes.LLM_MODEL_NAME, "gpt-4o-mini")
-            ex_span.set_attribute(SpanAttributes.OUTPUT_VALUE, extracted_items["json"])
+            ex_span.set_attribute(SpanAttributes.OUTPUT_VALUE, json.dumps(extracted_items["json"]))
             ex_span.set_status(Status(StatusCode.OK))
             ex_span.set_attribute("llm.model", "gpt-4o-mini")
             ex_span.set_attribute("llm.provider", "openai")
